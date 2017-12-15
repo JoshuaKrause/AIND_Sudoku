@@ -1,6 +1,4 @@
-
 from utils import *
-import pygame
 
 
 row_units = [cross(r, cols) for r in rows]
@@ -8,7 +6,7 @@ column_units = [cross(rows, c) for c in cols]
 square_units = [cross(rs, cs) for rs in ('ABC','DEF','GHI') for cs in ('123','456','789')]
 unitlist = row_units + column_units + square_units
 
-# TODO: Update the unit list to add the new diagonal units
+# Implement diagonal unit variable and add it to the unit list.
 diagonal_units = [[rows[i] + cols[i] for i in range(len(rows))], [rows[i] + cols[::-1][i] for i in range(len(rows))]]
 unitlist = unitlist + diagonal_units
 
@@ -43,9 +41,21 @@ def naked_twins(values):
     and because it is simpler (since the reduce_puzzle function already calls this
     strategy repeatedly).
     """
-    # TODO: Implement this function!
-    # raise NotImplementedError
-    pass
+    # Create a copy of values to avoid eliminating twins.
+    temp_values = values.copy()
+    
+    # Search the peers of two-digit values for twins.
+    # If a twin is found, remove the digits from their shared peers.
+    pairs = [box for box in values.keys() if len(values[box]) == 2]
+    for box in pairs:
+        digits = temp_values[box]
+        for peer in peers[box]:
+            if values[peer] == digits:
+                units = set(peers[box]) & set(peers[peer])
+                for unit in units:
+                    for digit in digits:
+                        values[unit] = values[unit].replace(digit, '')
+    return values
 
 def eliminate(values):
     """Apply the eliminate strategy to a Sudoku puzzle
@@ -118,6 +128,10 @@ def reduce_puzzle(values):
     while not stalled:
         solved_values_before = len([box for box in values.keys() if len(values[box]) == 1])
         values = eliminate(values)
+        
+        # Implement Naked Twins strategy
+        values = naked_twins(values)
+        
         values = only_choice(values)
         solved_values_after = len([box for box in values.keys() if len(values[box]) == 1])
         stalled = solved_values_before == solved_values_after
@@ -147,12 +161,10 @@ def search(values):
     """
     values = reduce_puzzle(values)
     if values is False:
-        return False ## Failed earlier
+        return False
     if all(len(values[s]) == 1 for s in boxes): 
-        return values ## Solved!
-    # Choose one of the unfilled squares with the fewest possibilities
-    n,s = min((len(values[s]), s) for s in boxes if len(values[s]) > 1)
-    # Now use recurrence to solve each one of the resulting sudokus, and 
+        return values
+    n,s = min((len(values[s]), s) for s in boxes if len(values[s]) > 1) 
     for value in values[s]:
         new_sudoku = values.copy()
         new_sudoku[s] = value
@@ -183,19 +195,18 @@ def solve(grid):
 
 if __name__ == "__main__":
     diag_sudoku_grid = '2.............62....1....7...6..8...3...9...7...6..4...4....8....52.............3'
+    #diag_sudoku_grid2 = '...14..78.......6.9..6.....84...2.13.1..3..5.37.5...84.....6..5.9.......75..14...'
     display(grid2values(diag_sudoku_grid))
-#    result = solve(diag_sudoku_grid)
-#    display(result)
+    result = solve(diag_sudoku_grid)
+    display(result)
+    
 #
-    try:
-        import PySudoku
-        PySudoku.play(grid2values(diag_sudoku_grid), result, history)
-
-    except SystemExit:
-        pass
-    except:
-        print('We could not visualize your board due to a pygame issue. Not a problem! It is not a requirement.')
-
-#print(diagonal_units)
-print(unitlist)
-print(cross('A', '1'))
+#    try:
+#        import PySudoku
+#        PySudoku.play(grid2values(diag_sudoku_grid), result, history)
+#
+#    except SystemExit:
+#
+#        pass
+#    except:
+#        print('We could not visualize your board due to a pygame issue. Not a problem! It is not a requirement.')
